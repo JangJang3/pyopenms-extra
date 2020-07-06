@@ -2,6 +2,8 @@ import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtCore import QPointF
 from pyqtgraph import PlotWidget
+from nptyping import NDArray, Float, Int64
+from typing import List, Any
 
 pg.setConfigOption("background", "w")  # white background
 pg.setConfigOption("foreground", "k")  # black peaks
@@ -9,8 +11,8 @@ pg.setConfigOption("foreground", "k")  # black peaks
 
 class ErrorWidget(PlotWidget):
     """
-    Used to plot a error plot to display the derivation
-        between exact mass and theoretical mass.
+    Used to plot an error plot to display the difference
+    between exact mass and theoretical mass.
     """
 
     def __init__(self, *args):
@@ -25,7 +27,9 @@ class ErrorWidget(PlotWidget):
         self.getViewBox().sigXRangeChanged.connect(self._autoscaleYAxis)
         self.setMouseEnabled(x=True, y=False)
 
-    def setMassErrors(self, mz, ppm, colors):
+    def setMassErrors(self, mz: NDArray[(Any, ...), Float],
+                      ppm: NDArray[(Any, ...), Float],
+                      colors: NDArray[(Any, ...), Int64]) -> None:
         """
         Used for creating new error plot
             with the m/z of the peptides fragments.
@@ -77,7 +81,11 @@ class ErrorWidget(PlotWidget):
         if self.currMaxY:
             self.setYRange(self.currMaxY * (-1), self.currMaxY, update=False)
 
-    def _getMaxMassErrorInRange(self, xrange):
+    def _getMaxMassErrorInRange(self, xrange: List[float]) -> Int64:
+        """
+        :param xrange: consists of the current min and max
+        x range position
+        """
         left = np.searchsorted(self._mzs, xrange[0], side="left")
         right = np.searchsorted(self._mzs, xrange[1], side="right")
         return np.amax(abs(self._ppm[left:right]), initial=1)
