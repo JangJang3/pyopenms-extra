@@ -77,6 +77,11 @@ class ErrorWidget(PlotWidget):
         self.redraw()
 
     def redraw(self):
+        """
+        Clears the plot of any data from previous settings and then draws
+        the error plot with the given data
+
+        """
         self.plot(clear=True)
         self.setXRange(np.amin(self._mzs), np.amax(self._mzs))
         self._autoscaleYAxis()
