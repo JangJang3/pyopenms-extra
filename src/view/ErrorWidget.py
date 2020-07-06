@@ -11,8 +11,33 @@ pg.setConfigOption("foreground", "k")  # black peaks
 
 class ErrorWidget(PlotWidget):
     """
-    Used to plot an error plot to display the difference
-    between exact mass and theoretical mass.
+    A class used to plot the difference between exact mass and theoretical
+    mass
+
+    ...
+
+    Attributes
+    ----------
+    mz : numpy array of floats
+        The experimental mass-to-charge ratio (m/z) of the ions
+
+    ppm : numpy array of floats
+        Mass error of between experimental m/z and theoretical
+
+    colors : numpy array of color tuples (r, g, b)
+        Colors differentiate between prefix and suffix ions
+        (prefix ions -> blue and suffix ions -> red)
+
+
+    Methods
+    -------
+    setMassErrors(mz=ndarray, ppm=ndarray, colors=ndarray)
+        Creates an error plot with mass spectrometry data
+
+    redraw()
+        Clear the plot of any data from previous settings and then draw the
+        error plot with the given data
+
     """
 
     def __init__(self, *args):
@@ -31,15 +56,19 @@ class ErrorWidget(PlotWidget):
                       ppm: NDArray[(Any, ...), Float],
                       colors: NDArray[(Any, ...), Int64]) -> None:
         """
-        Used for creating new error plot
-            with the m/z of the peptides fragments.
-        :param mz: An numpy array of m/z
-            (mass divided by charge number) of the ions
-            (starting with xyz or abc)
-        :param ppm: An numpy array of random numbers,
-            ppm needs to be calculated
-        :param colors: An numpy array of colors consisting of red and blue
-            (representing prefix -> blue and suffix -> red ions)
+        Creates an error plot with mass spectrometry data
+
+        Parameters
+        ----------
+        mz : numpy array of floats
+            The experimental mass-to-charge ratio (m/z) of the ions
+
+        ppm : numpy array of floats
+            Mass error of between experimental m/z and theoretical
+
+        colors : numpy array of color tuples (r, g, b)
+            Colors differentiate between prefix and suffix ions
+            (prefix ions -> blue and suffix ions -> red)
 
         """
         self._mzs = mz
@@ -83,9 +112,22 @@ class ErrorWidget(PlotWidget):
 
     def _getMaxMassErrorInRange(self, xrange: List[float]) -> Int64:
         """
-        :param xrange: consists of the current min and max
-        x range position
+        find the maximum mass error point in either experimental or
+        theoretical data
+
+        Parameters
+        ----------
+        xrange : List [float, float]
+            The minimum and maximum mass-to-charge ratio (m/z) points currently
+            presented in x-range of the plot
+
+
+        Returns
+        -------
+        float
+            The maximum mass error in the current x-range of both data
         """
         left = np.searchsorted(self._mzs, xrange[0], side="left")
         right = np.searchsorted(self._mzs, xrange[1], side="right")
         return np.amax(abs(self._ppm[left:right]), initial=1)
+
