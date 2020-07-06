@@ -1,15 +1,6 @@
 from PyQt5.QtCore import Qt, QPointF
-from PyQt5.QtGui import (
-    QFont,
-    QFontMetricsF,
-    QPainter,
-    QColor,
-    QPen,
-    QBrush,
-    QSpacerItem,
-    QSizePolicy,
-)
-from PyQt5.QtWidgets import QWidget, QHBoxLayout
+from PyQt5.QtGui import QFont, QFontMetricsF, QPainter, QColor, QPen, QBrush
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QSpacerItem, QSizePolicy
 
 
 class SequenceIonsWidget(QWidget):
