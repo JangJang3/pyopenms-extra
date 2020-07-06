@@ -35,7 +35,7 @@ class ErrorWidget(PlotWidget):
         Creates an error plot with mass spectrometry data
 
     redraw()
-        Clear the plot of any data from previous settings and then draw the
+        Clears the plot of any data from previous settings and then draw the
         error plot with the given data
 
     """
@@ -130,4 +130,3 @@ class ErrorWidget(PlotWidget):
         left = np.searchsorted(self._mzs, xrange[0], side="left")
         right = np.searchsorted(self._mzs, xrange[1], side="right")
         return np.amax(abs(self._ppm[left:right]), initial=1)
-
