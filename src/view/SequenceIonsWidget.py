@@ -175,39 +175,40 @@ class observed_peptide(QWidget):
     Attributes
     ----------
     sequence : str
-        The peptide sequence from a MS2 spectrum.
+        The peptide sequence from a MS2 spectrum
 
     seqLength : int
-        The number of aa in the peptide sequence.
+        The number of aa in the peptide sequence
 
     suffix : dict
-        Containing all suffix ion information for the given sequence.
+        Containing all suffix ion information for the given sequence
 
     prefix : dict
-        Containing all prefix ion information for the given sequence.
+        Containing all prefix ion information for the given sequence
 
     colors : dict
         Containing the colors for the drawn lines (black), suffix (red) and
-        prefix (blue) ions.
+        prefix (blue) ions
+
 
     Methods
     -------
     setSequence()
-        Sets the peptide sequence.
+        Sets the peptide sequence
 
     setSuffix()
-        Sets the suffix ions from the given peptide sequence.
+        Sets the suffix ions from the given peptide sequence
 
     setPrefix()
-        Sets the prefix ions from the given peptide sequence.
+        Sets the prefix ions from the given peptide sequence
 
     getFont_Pep()
         Returns a QFont object with the selected font type and font size (30)
-        for the peptide sequence.
+        for the peptide sequence
 
     getFont_Ion()
         Returns a QFont object with the selected font type and font size (10)
-        for the ion(s).
+        for the ion(s)
 
     """
 
@@ -285,7 +286,7 @@ class observed_peptide(QWidget):
         ----------
         qp : QPainter
             The QPainter class provides functions required to paint within the
-            widget.
+            widget
 
         """
         blankspace: int = 8
@@ -369,16 +370,16 @@ class observed_peptide(QWidget):
         ----------
         qp : QPainter
             The QPainter class provides functions required to paint within the
-            widget.
+            widget
 
         index: int
-            The position of the prefix ion(s) within the peptide.
+            The position of the prefix ion(s) within the peptide
 
         metrics_ion : QFontMetricsF
-            The font metrics of the ion(s) for the given font.
+            The font metrics of the ion(s) for the given font
 
         pos_left : QPointF
-            The coordination of the left line provided for the prefix ion(s).
+            The coordination of the left line provided for the prefix ion(s)
 
         """
         qp.setPen(self._getPen(self.colors["blue"]))
@@ -404,20 +405,20 @@ class observed_peptide(QWidget):
         ----------
         qp : QPainter
             The QPainter class provides functions required to paint within the
-            widget.
+            widget
 
         index_reverse: int
             The position of the suffix ion(s) within the peptide. The
-            positions are in reverse order compared to the prefix ion(s).
+            positions are in reverse order compared to the prefix ion(s)
 
         metrics_ion : QFontMetricsF
-            The font metrics of the ion(s) for the given font.
+            The font metrics of the ion(s) for the given font
 
         pos_end : QPointF
-            The start position of the right line.
+            The start position of the right line
 
         pos_right : QPointF
-            The end position of the right line.
+            The end position of the right line
 
         """
         qp.setPen(self._getPen(self.colors["red"]))
@@ -443,26 +444,26 @@ class observed_peptide(QWidget):
         ----------
         qp : QPainter
             The QPainter class provides functions required to paint within the
-            widget.
+            widget
 
         pos_start: QPointF
-            The start position of the line.
+            The start position of the line
 
         pos_end : QPointF
-            The end position of the line.
+            The end position of the line
 
         blankspace : int
-            The extra space of between each aa.
+            The extra space of between each aa
 
         iontype : str
-            The type differentiation between suffix or prefix (ions).
+            The type differentiation between suffix or prefix (ions)
 
 
         Returns
         -------
         QPointF
             The end position of the left or right line depending on the ion
-            type.
+            type
 
         """
 
@@ -487,7 +488,7 @@ class observed_peptide(QWidget):
         Returns
         -------
         QFont
-            The font is Courier and of size 30.
+            The font is Courier and of size 30
 
         """
         font = QFont("Courier")
@@ -502,7 +503,7 @@ class observed_peptide(QWidget):
         Returns
         -------
         QFont
-            The font is Courier and of size 10.
+            The font is Courier and of size 10
 
         """
         font = QFont("Courier")
@@ -517,35 +518,36 @@ class observed_peptide(QWidget):
         Parameters
         ----------
         color : QColor
-            The coloration of the lines. Typically, the lines are black.
+            The coloration of the lines. Typically, the lines are black
 
 
         Returns
         -------
         QPen
-            The style for the lines are dash dot lines.
+            The style for the lines are dash dot lines
 
         """
         pen = QPen(color, 0.75, Qt.SolidLine)
         pen.setStyle(Qt.DashDotLine)
         return pen
 
-    def _getReverseIndex(self, i: int, dict_seq: Dict) -> int:
+    def _getReverseIndex(self, i: int, dict_seq: dict) -> int:
         """
         Calculates the reverse index for a given index.
 
         Parameters
         ----------
         i : int
-            A given index.
+            A given index
 
         dict_seq : Dict
-            A dict that contains the given index and.
+            A dict that contains the given ion index
+
 
         Returns
         -------
         int
-            The reverse index from the given index.
+            The reverse index from the given index
 
         """
         i_rev = 0
