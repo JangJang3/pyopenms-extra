@@ -114,7 +114,7 @@ class TICWidget(PlotWidget):
         self._plot_tic()
         self._draw_peak_label()
 
-    def _autoscaleYAxis(self):
+    def _autoscaleYAxis(self) -> None:
         """
         Used to adjust y axis with the maximal y value
         from the current RT values. Also, redraws peak labels
