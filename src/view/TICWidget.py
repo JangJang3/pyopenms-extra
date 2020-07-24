@@ -139,6 +139,7 @@ class TICWidget(PlotWidget):
             The minimum and maximum rt points currently presented in x-range
             of the plot
 
+
         Returns
         -------
         float
