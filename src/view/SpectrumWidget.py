@@ -1,9 +1,10 @@
-from collections import namedtuple
-
 import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QMouseEvent
+from pyopenms.pyopenms_2 import MSSpectrum
 from pyqtgraph import PlotWidget
+from collections import namedtuple
 
 # structure for annotation (here for reference)
 PeakAnnoStruct = namedtuple(
@@ -22,6 +23,35 @@ pg.setConfigOption("foreground", "k")  # black peaks
 
 
 class SpectrumWidget(PlotWidget):
+    """
+    A class used to plot the spectrum from mass spectrometry data.
+
+    ...
+
+    Attributes
+    ----------
+    highlighted_peak_label : None
+        The currently highlighted peak label when hovering with the mouse
+        cursor over a peak.
+
+    peak_annotations : None
+        Peak annotations displayed with the tool FLASHDeconvViewer
+
+    ladder_annotations : None
+        Mass ladder annotations displayed with the tool FLASHDeconvViewer
+
+
+    Methods
+    -------
+    setSpectrum(spectrum=MSSpectrum, zoomToFullRange=bool)
+        Used to set a new spectrum with the given mass-to-charge ratios and
+        intensities from given mass spectrum data and draw it inside the
+        spectrum widget.
+
+    redrawsPlot()
+        Clears the previous plot settings for the new spectrum.
+
+    """
     def __init__(self, parent=None, dpi=100):
         PlotWidget.__init__(self)
         self.setLimits(yMin=0, xMin=0)
@@ -31,6 +61,7 @@ class SpectrumWidget(PlotWidget):
         self.highlighted_peak_label = None
         self.peak_annotations = None
         self.ladder_annotations = None
+
         # numpy arrays for fast look-up
         self._mzs = np.array([])
         self._ints = np.array([])
@@ -42,13 +73,29 @@ class SpectrumWidget(PlotWidget):
             self.scene().sigMouseMoved, rateLimit=60, slot=self._onMouseMoved
         )
 
-    def setSpectrum(
-            self, spectrum, zoomToFullRange=False
-    ):  # add a default value for displaying all peaks
+    def setSpectrum(self,
+                    spectrum: MSSpectrum,
+                    zoomToFullRange: bool=False) -> None:
+        """
+        Used to set a new spectrum with the given mass-to-charge ratios and
+        intensities from given mass spectrum data and draw it inside the
+        spectrum widget.
+
+        Parameters
+        ----------
+        spectrum : MSSpectrum
+            Contains information about a given mass spectrum.
+
+        zoomToFullRange: bool
+            Plots the spectrum widget accordingly to the minimum and maximum
+            m/z and intensities when the variable is set to true. If not the
+            window shows the current selected zoom setting for all other
+            displayed spectra.
+
+        """
         self.plot(clear=True)
         self.zoomToFullRange = zoomToFullRange  # relevant in redrawPlot()
-        # delete old highlighte "hover" peak
-        """se_comment: changed != to is not"""
+        # delete old highlights "hover" peak
         if self.highlighted_peak_label is not None:
             self.removeItem(self.highlighted_peak_label)
             self.highlighted_peak_label = None
@@ -73,7 +120,10 @@ class SpectrumWidget(PlotWidget):
         except (AttributeError, NameError):
             return
 
-    def redrawPlot(self):
+    def redrawPlot(self) -> None:
+        """
+        Clears the previous plot settings for the new spectrum.
+        """
         self.plot(clear=True)
         if self.zoomToFullRange:
             self.setXRange(self.minMZ, self.maxMZ)
@@ -85,12 +135,15 @@ class SpectrumWidget(PlotWidget):
     def redrawLadderAnnotations(self):
         self._plot_ladder_annotations()
 
-    def _autoscaleYAxis(self):
+    def _autoscaleYAxis(self) -> None:
+        """
+        Used to adjust y axis with the maximal y value
+        from the current m/z values. Also, redraws peak labels
+        depending on the current displayed m/z values.
+
+        """
         x_range = self.getAxis("bottom").range
-        if x_range == [
-            0,
-            1,
-        ]:  # workaround for axis sometimes not being set
+        if x_range == [0, 1]:  # workaround for axis sometimes not being set
             # TODO: check if this is resovled
             x_range = [np.amin(self._mzs), np.amax(self._mzs)]
         self.currMaxY = self._getMaxIntensityInRange(x_range)
@@ -190,6 +243,7 @@ class SpectrumWidget(PlotWidget):
         self.peak_annotation_list = None
 
     def _clear_ladder_item(self, key):
+
         for anno in self._ladder_anno_lines[key]:
             anno.clear()
         for pos in self._ladder_anno_labels[key]:
@@ -197,7 +251,18 @@ class SpectrumWidget(PlotWidget):
         del self._ladder_anno_lines[key]
         del self._ladder_anno_labels[key]
 
-    def _onMouseMoved(self, evt):
+    def _onMouseMoved(self, evt: QMouseEvent) -> None:
+        """
+        By hovering over a peak the peak intensity will be annotated for this
+        specific peak and deleted if the mouse cursor moved to far away.
+
+        Parameters
+        ----------
+        evt : QMouseEvent
+            The QMouseEvent occurs when a mouse cursor moves inside the
+            spectrum widget.
+
+        """
         pos = evt[0]  # using signal proxy
         # turns original arguments into a tuple
         if self.sceneBoundingRect().contains(pos):
