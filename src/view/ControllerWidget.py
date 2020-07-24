@@ -396,8 +396,8 @@ class ControllerWidget(QWidget):
 
     def filterAnnotationIon(self, fragment_anno: str) -> Tuple[int, str]:
         """
-        Returns the filtered ion annotation by prefix and suffix ions (b
-        and y ions) after the schema e.g. b7
+        Returns the filtered ion annotation by prefix and suffix ions
+        after the schema e.g. b7
 
         Parameters
         ----------
