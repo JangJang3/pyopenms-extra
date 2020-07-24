@@ -142,7 +142,7 @@ class TICWidget(PlotWidget):
         Returns
         -------
         float
-            The maximum intensity in the current x-range.
+            The maximum intensity in the current x-range
 
         """
         left = np.searchsorted(self._rts, xrange[0], side="left")
@@ -165,7 +165,7 @@ class TICWidget(PlotWidget):
         -------
         list
             A list containing all peak indices, sorted descending (max first
-            -> min last).
+            -> min last)
 
         """
         data = self._ints
@@ -204,16 +204,16 @@ class TICWidget(PlotWidget):
         Parameters
         ----------
         label_id : int
-            The id of the current label.
+            The id of the current label
 
         label_text : float
-            The label annotation text for the peak.
+            The label annotation text for the peak
 
         pos_x : float
-            The x-position for the label inside the TIC widget.
+            The x-position for the label inside the TIC widget
 
         pos_y : float
-            The y-position for the label inside the TIC widget.
+            The y-position for the label inside the TIC widget
 
         """
         label = pg.TextItem(anchor=(0.5, 1))
@@ -232,7 +232,7 @@ class TICWidget(PlotWidget):
         Parameters
         ----------
         label_id : int
-            The id of the current label.
+            The id of the current label
 
         """
         self.removeItem(self._peak_labels[label_id]["label"])
@@ -240,7 +240,7 @@ class TICWidget(PlotWidget):
 
     def _clear_labels(self) -> None:
         """
-        Delete all labels inside the TIC widget.
+        Delete all labels inside the TIC widget
         """
         for label_id in self._peak_labels.keys():
             self.removeItem(self._peak_labels[label_id]["label"])
@@ -256,13 +256,13 @@ class TICWidget(PlotWidget):
         Parameters
         ----------
         label_id : int
-            The id of the current label.
+            The id of the current label
 
 
         Returns
         -------
         bool
-            A boolean indicating if there is a clash or not.
+            A boolean indicating if there is a clash or not
 
         """
         new_label = label_id
@@ -339,7 +339,7 @@ class TICWidget(PlotWidget):
         ----------
         event : QMouseEvent
             The QMouseEvent occurs when a mouse button is pressed inside the TIC
-            widget.
+            widget
 
         """
         if self._existTIC:
@@ -367,7 +367,7 @@ class TICWidget(PlotWidget):
         ----------
         event : QMouseEvent
             The QMouseEvent occurs when the user double clicks the mouse button
-            on the TIC widget.
+            on the TIC widget
 
         """
         super(TICWidget, self).mouseDoubleClickEvent(event)
@@ -395,13 +395,13 @@ class TICWidget(PlotWidget):
         Parameters
         ----------
         point_x : float
-            The clicked mouse x-position.
+            The clicked mouse x-position
 
 
         Returns
         -------
         int
-            The index of the closest data point.
+            The index of the closest data point
         """
         larger_idx = np.searchsorted(self._rts, point_x, side="left")
         smaller_idx = 0
