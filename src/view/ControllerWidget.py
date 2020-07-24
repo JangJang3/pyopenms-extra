@@ -5,12 +5,14 @@ from collections import namedtuple
 import numpy as np
 import pyopenms
 from ErrorWidget import ErrorWidget
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QHBoxLayout, QWidget, QSplitter, QTableWidget
+from PyQt5.QtCore import Qt, QModelIndex
+from PyQt5.QtWidgets import QHBoxLayout, QWidget, QSplitter
 from ScanTableWidget import ScanTableWidget
 from SequenceIonsWidget import SequenceIonsWidget
 from SpectrumWidget import SpectrumWidget
 from TICWidget import TICWidget
+
+from typing import Tuple
 
 PeakAnnoStruct = namedtuple(
     "PeakAnnoStruct",
@@ -28,6 +30,8 @@ class ControllerWidget(QWidget):
     """
     Used to merge spectrum, table, TIC,
     error plot and sequenceIons widgets together.
+
+
 
     """
 
@@ -178,7 +182,7 @@ class ControllerWidget(QWidget):
                     print("could not found ModelIndex of row")
 
     # for the future calculate ppm and add it to the table
-    def errorData(self, ions_data):
+    def errorData(self, ions_data: dict) -> None:
         if ions_data not in "-":
             ions_data_dict = json.loads(ions_data)
             if ions_data_dict != {}:
@@ -193,12 +197,23 @@ class ControllerWidget(QWidget):
         else:
             self.error_widget.clear()
 
-    def filterColorsMZIons(
-            self, ions_data_dict
-    ):  # create color/mz array by distinguishing between prefix & suffix ions
-        self.peakAnnoData = (
-            {}
-        )  # key is ion annotation (e.g. b2):
+    def filterColorsMZIons(self,
+                           ions_data_dict: dict) -> Tuple[np.ndarray,
+                                                          np.ndarray]:
+        """
+        Filters the ion information and distinguishes between prefix and
+        suffix ions. The data is stored in two arrays (color, m/z)
+
+        Returns
+        -------
+        Tuple[np.ndarray, np.ndarray]
+            Returns two numpy arrays with the coloration and m/z information
+            of the ions.
+
+        """
+        # create color/mz array by distinguishing between prefix & suffix ions
+        self.peakAnnoData: dict = {}
+        # key is ion annotation (e.g. b2):
         # [mz, color distinguishing prefix, suffix]
         colors = []
         mzs = []
@@ -219,10 +234,17 @@ class ControllerWidget(QWidget):
                     ions_data_dict[anno][0], col_red]
         return np.array(colors), np.array(mzs)
 
-    def updateWidgetDataFromRow(
-            self, index
-    ):  # after clicking on a new row, update spectrum, error plot, peptideSeq
-        # current row RT value
+    def updateWidgetDataFromRow(self, index: QModelIndex) -> None:
+        """
+        Updates the Scantable widget after clicking on a new row by updating
+        the spectrum, error plot, peptide sequence
+
+        Parameter
+        -------
+        index : QModelIndex
+            The index of the new selected row.
+
+        """
         self.seleTableRT = round(index.siblingAtColumn(2).data(), 3)
 
         # set new spectrum with setting that all peaks should be displayed
@@ -256,8 +278,19 @@ class ControllerWidget(QWidget):
             self.spectrum_widget._clear_peak_annotations()
             self.spectrum_widget.redrawPlot()
 
-    def createPeakAnnotation(self):
-        pStructList = []
+    def createPeakAnnotation(self) -> list:
+        """
+        Creates the PeakAnnotations for the peaks with the given ion
+        information.
+
+        Returns
+        -------
+        list
+            A list of peak annotations in form of the corresponding ion types
+            will be returned.
+
+        """
+        pStructList: list = []
         # for the future ->
         # check clashes like in the TIC widget and then add labels
         # (should be done in SpectrumWidget)
@@ -280,7 +313,20 @@ class ControllerWidget(QWidget):
         idx = (np.abs(array - value)).argmin()
         return idx
 
-    def drawSeqIons(self, seq, ions):  # generate provided peptide sequence
+    def drawSeqIons(self, seq: str, ions: dict) -> None:
+        """
+        Paints the peptide sequence inside the SequenceIons widget with the
+        existing ions.
+
+        Parameters
+        ----------
+        seq : str
+            Peptide sequence for the given MS2 spectrum
+
+        ions : dict
+            Raw ion data information packed into a dictionary
+
+        """
         seq = re.sub(
             r"\([^)]*\)", "", seq
         )  # remove content in brackets -> easier usage
@@ -304,15 +350,28 @@ class ControllerWidget(QWidget):
             self.seqIons_widget.clear()
             self.peakAnnoData = None
 
-    def filterIonsPrefixSuffixData(
-            self, ions
-    ):  # filter raw ion data and return suffix and prefix dicts
-        suffix = {}
-        prefix = {}
+    def filterIonsPrefixSuffixData(self, ions: dict) -> Tuple[dict, dict]:
+        """
+        Returns prefix and suffix dictionaries with the ion anntations and
+        indices.
 
-        ions_anno = list(ions.keys())
+        Parameters
+        ----------
+        ions : dict
+            Raw ion data information packed into a dictionary
+
+        Returns
+        -------
+        Tuple[dict, dict]
+            The prefix and suffix ion dictionaries
+
+        """
+        suffix: dict = {}
+        prefix: dict = {}
+
+        ions_anno: list = list(ions.keys())
         # annotation(s) of raw ion data (used as key(s))
-        self.filteredIonFragments = []
+        self.filteredIonFragments: list = []
 
         for anno in ions_anno:
             if anno[1].isdigit() and anno[0] in "abcyxz":
@@ -335,9 +394,22 @@ class ControllerWidget(QWidget):
                     prefix[index] = [anno_short]
         return suffix, prefix
 
-    def filterAnnotationIon(self, fragment_anno):
-        # filter from raw ion data annotation index
-        # and filtered annotation name (e.g. y2)
+    def filterAnnotationIon(self, fragment_anno: str) -> Tuple[int, str]:
+        """
+        Returns the filtered ion annotation by prefix and suffix ions (b
+        and y ions) after the schema e.g. b7
+
+        Parameters
+        ----------
+        fragment_anno : str
+            The raw ion annotation from the given data file.
+
+        Returns
+        -------
+        Tuple[int, str]
+            Contains the ion position and the new ion annotation
+
+        """
         index = [s for s in re.findall(r"-?\d+\.?\d*", fragment_anno)][0]
         ion_anno = fragment_anno.split(index)[0] + index
         self.filteredIonFragments.append((fragment_anno, ion_anno))
