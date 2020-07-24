@@ -1,6 +1,8 @@
 from PyQt5.QtCore import Qt, QPointF
-from PyQt5.QtGui import QFont, QFontMetricsF, QPainter, QColor, QPen, QBrush
+from PyQt5.QtGui import QFont, QFontMetricsF, QPainter, QColor, QPen, QBrush,\
+    QPaintEvent
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QSpacerItem, QSizePolicy
+from typing import Dict, Union
 
 
 class SequenceIonsWidget(QWidget):
@@ -9,11 +11,42 @@ class SequenceIonsWidget(QWidget):
     which is adjusted to the sequence size.
     To avoid contortions of the window, spaceritems are added.
 
+    Attributes
+    ----------
+    HEIGHT : float or int
+        The window height adjusted to the drawn peptide
+
+    WEIGHT : float or int
+        The window width adjusted to the drawn peptide
+
+    SUFFIX_HEIGHT : float or int
+        The given maximum height over all given (stacked) suffix ions
+
+
+    Methods
+    -------
+    resize()
+        Calculates the HEIGHT, WEIGHT and SUFFIX_HEIGHT of the window for a
+        given peptide
+
+    setPeptide()
+        Sets the peptide sequence
+
+    setSuffix()
+        Sets the suffix ions from the given peptide sequence.
+
+    setPrefix()
+        Sets the prefix ions from the given peptide sequence
+
+    updateWindowSize()
+        Calculates the window size accordingly for the given heights to fit the
+        peptide sequence
+
     """
 
-    HEIGHT = 0
-    WIDTH = 0
-    SUFFIX_HEIGHT = 0
+    HEIGHT: Union[float, int] = 0.0
+    WIDTH: Union[float, int] = 0.0
+    SUFFIX_HEIGHT: Union[float, int] = 0.0
 
     def __init__(self, *args):
         QWidget.__init__(self, *args)
@@ -67,23 +100,14 @@ class SequenceIonsWidget(QWidget):
         monospace width.
 
         """
-        if len(self._pep.sequence) == 0:
-            SequenceIonsWidget.WIDTH = 0
-        else:
+        if self._pep.seqLength != 0:
             SequenceIonsWidget.WIDTH = \
-                (len(self._pep.sequence) * 18) + \
-                (len(self._pep.sequence) - 1) * 8
-        self.calculateHeight()
+                (self._pep.seqLength * 18.0) + \
+                (self._pep.seqLength - 1.0) * 8.0
 
-    def calculateHeight(self):
-        """
-        Calculate window height adjusting to sequence height
-        with possible ions and set default setting in case of no
-        ions.
-
-        """
-        prefix = self._pep.prefix
-        suffix = self._pep.suffix
+        # calculate heights
+        prefix: Dict = self._pep.prefix
+        suffix: Dict = self._pep.suffix
 
         if suffix == {}:
             max_ion_suff = 1
@@ -98,14 +122,13 @@ class SequenceIonsWidget(QWidget):
                 prefix[max(prefix, key=lambda key: len(prefix[key]))])
 
         metrics_pep = QFontMetricsF(self._pep.getFont_Pep())
-        height_pep = metrics_pep.height()
-
         metrics_ion = QFontMetricsF(self._pep.getFont_Ion())
+        height_pep = metrics_pep.height()
         height_ion = metrics_ion.height()
 
         # window height calculated with the sum of max prefix and suffix height
-        height_ion_pre = height_ion * max_ion_pre + 15
-        SequenceIonsWidget.SUFFIX_HEIGHT = height_ion * max_ion_suff + 5
+        height_ion_pre = height_ion * max_ion_pre + 15.0
+        SequenceIonsWidget.SUFFIX_HEIGHT = height_ion * max_ion_suff + 5.0
         SequenceIonsWidget.HEIGHT = \
             (
                 height_pep + height_ion_pre + SequenceIonsWidget.SUFFIX_HEIGHT
@@ -113,17 +136,17 @@ class SequenceIonsWidget(QWidget):
 
     def setPeptide(self, seq):
         self._pep.setSequence(seq)
-        self.updateWindow()
+        self.updateWindowSize()
 
     def setSuffix(self, suff):
         self._pep.setSuffix(suff)
-        self.updateWindow()
+        self.updateWindowSize()
 
     def setPrefix(self, pre):
         self._pep.setPrefix(pre)
-        self.updateWindow()
+        self.updateWindowSize()
 
-    def updateWindow(self):
+    def updateWindowSize(self):
         self.resize()
         self._pep.setMinimumSize(
             SequenceIonsWidget.WIDTH, SequenceIonsWidget.HEIGHT)
@@ -153,6 +176,7 @@ class observed_peptide(QWidget):
 
     def initUI(self):
         self.sequence = ""
+        self.seqLength = 0
         self.suffix = {}
         self.prefix = {}
         self.colors = {
@@ -161,16 +185,17 @@ class observed_peptide(QWidget):
             "blue": QColor(0, 0, 255),
         }
 
-    def setSequence(self, seq):
+    def setSequence(self, seq: str) -> None:
         self.sequence = seq
+        self.seqLength = len(seq)
 
-    def setSuffix(self, lst):
+    def setSuffix(self, lst: Dict) -> None:
         self.suffix = lst
 
-    def setPrefix(self, lst):
+    def setPrefix(self, lst: Dict) -> None:
         self.prefix = lst
 
-    def paintEvent(self, event):
+    def paintEvent(self, event: QPaintEvent) -> None:
         qp = QPainter()
         qp.begin(self)
         qp.setRenderHint(QPainter.Antialiasing)
@@ -178,30 +203,30 @@ class observed_peptide(QWidget):
         self._drawPeptide(qp)
         qp.end()
 
-    def _drawPeptide(self, qp):
+    def _drawPeptide(self, qp: QPainter) -> None:
         qp.setWindow(0, 0, SequenceIonsWidget.WIDTH, SequenceIonsWidget.HEIGHT)
         qp.setPen(self.colors["black"])
         qp.setFont(self.getFont_Pep())
         self._fragmentPeptide(qp)
 
-    def _fragmentPeptide(self, qp):
+    def _fragmentPeptide(self, qp: QPainter) -> None:
         """
-        In this function the sequence will be created stepwise.
-        Each char of the sequence is drawn separately to add the
-        lines between and the ions.
+        The sequence will be generated stepwise by drawing each aa of the
+        sequence separately and adding in each step lines and existing ions.
 
+        The procedure can be described in two steps:
         1. Check if sequence is given, if so
         then transform seq into a dictionary
         (with the indices representing the positions of the chars).
         2. For each char in the sequence:
-            First, calculate start position of char
+            Firstly, calculate start position of char
             (be aware that the char rect is created
             at the left bottom corner of
             the char, meaning we have to add the height of the Font
             & possible suffixes to the starting height position
             to move it into the center of the window).
 
-            Secound, calculate the center point for the vertical Line.
+            Secondly, calculate the center point for the vertical Line.
             The Line consists of a point start and point end.
             The starting line xPos yield in the
             start_point + blank - (SPACE/2),
@@ -215,8 +240,14 @@ class observed_peptide(QWidget):
             Because of changing the fonts for the ions,
             the fonts needs to be reset.
 
+        Parameters
+        ----------
+        qp : QPainter
+            The QPainter class provides functions required to paint within the
+            widget.
+
         """
-        SPACE = 8
+        blankspace: int = 8
 
         if self.sequence != "":
 
@@ -248,7 +279,7 @@ class observed_peptide(QWidget):
                     ) - 1
 
                 start_linePos = QPointF(
-                    start_point + blank - (SPACE / 2),
+                    start_point + blank - (blankspace / 2),
                     centerOfLine - height / 2 - 2.5
                 )
                 end_linePos = QPointF(
@@ -260,14 +291,14 @@ class observed_peptide(QWidget):
 
                 if i in self.prefix:
                     left_linePos = self._drawIonsLines(
-                        qp, start_linePos, end_linePos, SPACE, "prefix"
+                        qp, start_linePos, end_linePos, blankspace, "prefix"
                     )
                     self._drawPrefixIon(qp, i, metrics_ion, left_linePos)
 
                 # for given line of existing prefix, expand with given suffix
                 if i in self.prefix and i_rev in self.suffix:
                     right_linePos = self._drawIonsLines(
-                        qp, start_linePos, end_linePos, SPACE, "suffix"
+                        qp, start_linePos, end_linePos, blankspace, "suffix"
                     )
                     self._drawSuffixIon(
                         qp, i_rev, metrics_ion, end_linePos, right_linePos
@@ -275,17 +306,40 @@ class observed_peptide(QWidget):
 
                 elif i_rev in self.suffix and i not in self.prefix:
                     right_linePos = self._drawIonsLines(
-                        qp, start_linePos, end_linePos, SPACE, "suffix"
+                        qp, start_linePos, end_linePos, blankspace, "suffix"
                     )
                     self._drawSuffixIon(
                         qp, i_rev, metrics_ion, start_linePos, right_linePos
                     )
 
-                blank += width + SPACE
+                blank += width + blankspace
                 qp.setPen(self._getPen(self.colors["black"]))
                 qp.setFont(self.getFont_Pep())
 
-    def _drawPrefixIon(self, qp, index, metrics_ion, pos_left):
+    def _drawPrefixIon(self,
+                       qp: QPainter,
+                       index: int,
+                       metrics_ion: QFontMetricsF,
+                       pos_left: QPointF) -> None:
+        """
+        Draws existing prefix ion(s) and the left line at this position.
+
+        Parameters
+        ----------
+        qp : QPainter
+            The QPainter class provides functions required to paint within the
+            widget.
+
+        index: int
+            The position of the prefix ion(s) within the peptide.
+
+        metrics_ion : QFontMetricsF
+            The font metrics of the ion(s) for the given font.
+
+        pos_left : QPointF
+            The coordination of the left line provided for the prefix ion(s).
+
+        """
         qp.setPen(self._getPen(self.colors["blue"]))
         prefix_ions = sorted(self.prefix[index])
         blank_ion = 10
@@ -296,13 +350,35 @@ class observed_peptide(QWidget):
             qp.drawText(pos_ion, ion)
             blank_ion += height_ion
 
-    def _drawSuffixIon(
-            self,
-            qp,
-            index_reverse,
-            metrics_ion,
-            pos_end,
-            pos_right):
+    def _drawSuffixIon(self,
+                       qp: QPainter,
+                       index_reverse: int,
+                       metrics_ion: QFontMetricsF,
+                       pos_end: QPointF,
+                       pos_right: QPointF) -> None:
+        """
+        Draws existing suffix ion(s) and the right line at this position.
+
+        Parameters
+        ----------
+        qp : QPainter
+            The QPainter class provides functions required to paint within the
+            widget.
+
+        index_reverse: int
+            The position of the suffix ion(s) within the peptide. The
+            positions are in reverse order compared to the prefix ion(s).
+
+        metrics_ion : QFontMetricsF
+            The font metrics of the ion(s) for the given font.
+
+        pos_end : QPointF
+            The start position of the right line.
+
+        pos_right : QPointF
+            The end position of the right line.
+
+        """
         qp.setPen(self._getPen(self.colors["red"]))
         suffix_ions = sorted(self.suffix[index_reverse], reverse=True)
         blank_ion = 5
@@ -313,40 +389,124 @@ class observed_peptide(QWidget):
             qp.drawText(pos_ion, ion)
             blank_ion += height_ion
 
-    def _drawIonsLines(self, qp, pos_start, pos_end, SPACE, order):
+    def _drawIonsLines(self,
+                       qp: QPainter,
+                       pos_start: QPointF,
+                       pos_end: QPointF,
+                       blankspace: int,
+                       iontype: str) -> QPointF:
+        """
+        Draw the middle line between each aa in the peptide.
+
+        Parameters
+        ----------
+        qp : QPainter
+            The QPainter class provides functions required to paint within the
+            widget.
+
+        pos_start: QPointF
+            The start position of the line.
+
+        pos_end : QPointF
+            The end position of the line.
+
+        blankspace : int
+            The extra space of between each aa.
+
+        iontype : str
+            The type differentiation between suffix or prefix (ions).
+
+
+        Returns
+        -------
+        QPointF
+            The end position of the left or right line depending on the ion
+            type.
+
+        """
+
         qp.setPen(self._getPen(self.colors["black"]))
 
-        if order == "prefix":
+        if iontype == "prefix":
             qp.drawLine(pos_start, pos_end)
-            pos_left = QPointF(pos_end.x() - 2 * SPACE, pos_end.y())
+            pos_left = QPointF(pos_end.x() - 2 * blankspace, pos_end.y())
             qp.drawLine(pos_end, pos_left)
             return pos_left
 
-        if order == "suffix":
+        if iontype == "suffix":
             qp.drawLine(pos_start, pos_end)
-            pos_right = QPointF(pos_start.x() + 2 * SPACE, pos_start.y())
+            pos_right = QPointF(pos_start.x() + 2 * blankspace, pos_start.y())
             qp.drawLine(pos_start, pos_right)
             return pos_right
 
-    def getFont_Pep(self):
+    def getFont_Pep(self) -> QFont:
+        """
+        Initializes the font character for the aa's.
+
+        Returns
+        -------
+        QFont
+            The font is Courier and of size 30.
+
+        """
         font = QFont("Courier")
         font.setStyleHint(QFont.TypeWriter)
         font.setPixelSize(30)
         return font
 
-    def getFont_Ion(self):
+    def getFont_Ion(self) -> QFont:
+        """
+        Initializes the font character for the ion(s).
+
+        Returns
+        -------
+        QFont
+            The font is Courier and of size 10.
+
+        """
         font = QFont("Courier")
         font.setStyleHint(QFont.TypeWriter)
         font.setPixelSize(10)
         return font
 
-    def _getPen(self, color):
-        # style settings for the lines
+    def _getPen(self, color: QColor) -> QPen:
+        """
+        Style setting for the lines
+
+        Parameters
+        ----------
+        color : QColor
+            The coloration of the lines. Typically, the lines are black.
+
+
+        Returns
+        -------
+        QPen
+            The style for the lines are dash dot lines.
+
+        """
         pen = QPen(color, 0.75, Qt.SolidLine)
         pen.setStyle(Qt.DashDotLine)
         return pen
 
-    def _getReverseIndex(self, i, dict_seq):
+    def _getReverseIndex(self, i: int, dict_seq: Dict) -> int:
+        """
+        Calculates the reverse index for a given index.
+
+        Parameters
+        ----------
+        i : int
+            A given index.
+
+        dict_seq : Dict
+            A dict that contains the given index and.
+
+        Returns
+        -------
+        int
+            The reverse index from the given index
+
+        """
         i_rev = 0
         if i != 0:
             i_rev = list(dict_seq.keys())[-i]
