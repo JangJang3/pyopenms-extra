@@ -1,13 +1,19 @@
 from PyQt5.QtCore import Qt, QPointF
-from PyQt5.QtGui import QFont, QFontMetricsF, QPainter, QColor, QPen, QBrush,\
+from PyQt5.QtGui import (
+    QFont,
+    QFontMetricsF,
+    QPainter, QColor,
+    QPen, QBrush,
     QPaintEvent
+)
+
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QSpacerItem, QSizePolicy
-from typing import Dict, Union
+from typing import Union
 
 
 class SequenceIonsWidget(QWidget):
     """
-    Used for creates a window for a peptide sequence with its given ions,
+    Used to create a window for a peptide sequence with its given ions,
     which is adjusted to the sequence size.
     To avoid contortions of the window, spaceritems are added.
 
@@ -25,15 +31,11 @@ class SequenceIonsWidget(QWidget):
 
     Methods
     -------
-    resize()
-        Calculates the HEIGHT, WEIGHT and SUFFIX_HEIGHT of the window for a
-        given peptide
-
     setPeptide()
         Sets the peptide sequence
 
     setSuffix()
-        Sets the suffix ions from the given peptide sequence.
+        Sets the suffix ions from the given peptide sequence
 
     setPrefix()
         Sets the prefix ions from the given peptide sequence
@@ -41,6 +43,9 @@ class SequenceIonsWidget(QWidget):
     updateWindowSize()
         Calculates the window size accordingly for the given heights to fit the
         peptide sequence
+
+    clear()
+        Resets the SequenceIons widget back to the default setting
 
     """
 
@@ -66,7 +71,7 @@ class SequenceIonsWidget(QWidget):
         self.seqIons_layout.setContentsMargins(0, 0, 0, 0)
         self._pep = observed_peptide()
         # resize window to fit peptide size
-        self.resize()
+        self._resize()
 
         self._pep.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
         self._pep.setMinimumSize(
@@ -93,7 +98,7 @@ class SequenceIonsWidget(QWidget):
         self.mainlayout.addWidget(self.container)
         self.show()
 
-    def resize(self):
+    def _resize(self):
         """
         The integer 8 represents the additional space needed
         for the in addition drawn lines. The 18 represents the
@@ -147,7 +152,7 @@ class SequenceIonsWidget(QWidget):
         self.updateWindowSize()
 
     def updateWindowSize(self):
-        self.resize()
+        self._resize()
         self._pep.setMinimumSize(
             SequenceIonsWidget.WIDTH, SequenceIonsWidget.HEIGHT)
         self.setFixedHeight(SequenceIonsWidget.HEIGHT)
@@ -159,14 +164,50 @@ class SequenceIonsWidget(QWidget):
         self._pep.prefix = {}
         self.update()
 
-
 class observed_peptide(QWidget):
     """
-    Used for creates a peptide sequence with its given ions.
+    Used for creating a peptide sequence with its given ions.
     The ions can be stacked above each other, e.g. in case for
     a1, b1. Each amino letter is also separated by a line
     and prefixes are colored blue, otherwise suffixes are colored
     red.
+
+    Attributes
+    ----------
+    sequence : str
+        The peptide sequence from a MS2 spectrum.
+
+    seqLength : int
+        The number of aa in the peptide sequence.
+
+    suffix : dict
+        Containing all suffix ion information for the given sequence.
+
+    prefix : dict
+        Containing all prefix ion information for the given sequence.
+
+    colors : dict
+        Containing the colors for the drawn lines (black), suffix (red) and
+        prefix (blue) ions.
+
+    Methods
+    -------
+    setSequence()
+        Sets the peptide sequence.
+
+    setSuffix()
+        Sets the suffix ions from the given peptide sequence.
+
+    setPrefix()
+        Sets the prefix ions from the given peptide sequence.
+
+    getFont_Pep()
+        Returns a QFont object with the selected font type and font size (30)
+        for the peptide sequence.
+
+    getFont_Ion()
+        Returns a QFont object with the selected font type and font size (10)
+        for the ion(s).
 
     """
 
@@ -189,10 +230,10 @@ class observed_peptide(QWidget):
         self.sequence = seq
         self.seqLength = len(seq)
 
-    def setSuffix(self, lst: Dict) -> None:
+    def setSuffix(self, lst: dict) -> None:
         self.suffix = lst
 
-    def setPrefix(self, lst: Dict) -> None:
+    def setPrefix(self, lst: dict) -> None:
         self.prefix = lst
 
     def paintEvent(self, event: QPaintEvent) -> None:
@@ -504,7 +545,7 @@ class observed_peptide(QWidget):
         Returns
         -------
         int
-            The reverse index from the given index
+            The reverse index from the given index.
 
         """
         i_rev = 0
