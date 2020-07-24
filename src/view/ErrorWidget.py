@@ -12,7 +12,7 @@ pg.setConfigOption("foreground", "k")  # black peaks
 class ErrorWidget(PlotWidget):
     """
     A class used to plot the difference between exact mass and theoretical
-    mass
+    mass.
 
     ...
 
@@ -56,7 +56,7 @@ class ErrorWidget(PlotWidget):
                       ppm: NDArray[(Any, ...), Float],
                       colors: NDArray[(Any, ...), Int64]) -> None:
         """
-        Creates an error plot with mass spectrometry data
+        Creates an error plot with mass spectrometry data.
 
         Parameters
         ----------
@@ -117,7 +117,7 @@ class ErrorWidget(PlotWidget):
 
     def _getMaxMassErrorInRange(self, xrange: List[float]) -> Int64:
         """
-        find the maximum mass error point in either experimental or
+        Finds the maximum mass error point in either experimental or
         theoretical data
 
         Parameters
