@@ -111,8 +111,8 @@ class SequenceIonsWidget(QWidget):
                 (self._pep.seqLength - 1.0) * 8.0
 
         # calculate heights
-        prefix: Dict = self._pep.prefix
-        suffix: Dict = self._pep.suffix
+        prefix: dict = self._pep.prefix
+        suffix: dict = self._pep.suffix
 
         if suffix == {}:
             max_ion_suff = 1
@@ -298,7 +298,7 @@ class observed_peptide(QWidget):
 
             metrics = QFontMetricsF(self.getFont_Pep())
 
-            blank = 0
+            blank: int = 0
             for i, s in dict_seq.items():
                 i_rev = self._getReverseIndex(i, dict_seq)
 
@@ -384,10 +384,10 @@ class observed_peptide(QWidget):
         """
         qp.setPen(self._getPen(self.colors["blue"]))
         prefix_ions = sorted(self.prefix[index])
-        blank_ion = 10
+        blank_ion: int = 10
 
         for ion in prefix_ions:
-            height_ion = metrics_ion.boundingRect(ion).height()
+            height_ion: float = metrics_ion.boundingRect(ion).height()
             pos_ion = QPointF(pos_left.x(), pos_left.y() + blank_ion)
             qp.drawText(pos_ion, ion)
             blank_ion += height_ion
@@ -423,10 +423,10 @@ class observed_peptide(QWidget):
         """
         qp.setPen(self._getPen(self.colors["red"]))
         suffix_ions = sorted(self.suffix[index_reverse], reverse=True)
-        blank_ion = 5
+        blank_ion: int = 5
 
         for ion in suffix_ions:
-            height_ion = metrics_ion.boundingRect(ion).height()
+            height_ion: float = metrics_ion.boundingRect(ion).height()
             pos_ion = QPointF(pos_end.x() + 2.5, pos_right.y() - blank_ion)
             qp.drawText(pos_ion, ion)
             blank_ion += height_ion
@@ -540,8 +540,8 @@ class observed_peptide(QWidget):
         i : int
             A given index
 
-        dict_seq : Dict
-            A dict that contains the given ion index
+        dict_seq : dict
+            A dictionary that contains the given ion index
 
 
         Returns
@@ -550,7 +550,7 @@ class observed_peptide(QWidget):
             The reverse index from the given index
 
         """
-        i_rev = 0
+        i_rev: int = 0
         if i != 0:
             i_rev = list(dict_seq.keys())[-i]
         return i_rev
