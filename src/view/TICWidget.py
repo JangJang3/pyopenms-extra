@@ -1,9 +1,12 @@
 import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtGui import QKeySequence
+from PyQt5.QtGui import QKeySequence, QMouseEvent
 from PyQt5.QtWidgets import QShortcut
+from pyopenms.pyopenms_3 import MSChromatogram
 from pyqtgraph import PlotWidget
+from typing import List
+
 
 pg.setConfigOption("background", "w")  # white background
 pg.setConfigOption("foreground", "k")  # black peaks
@@ -25,12 +28,23 @@ class TICWidget(PlotWidget):
                                      The signal returns the start and end
                                      RT values within the region.
     ===============================  =========================================
+
+    ...
+
+    Methods
+    ----------
+    setTIC(chromatogram=MSChromatogram)
+        Used to set new TIC and with given Information (rts, ints)
+
+    redrawPlot()
+        Clears the plot of any data from previous settings and then draws the
+        TIC widget with the new given data
+
     """
 
     sigRTClicked = pyqtSignal(float, name="sigRTClicked")
-    sigSeleRTRegionChangeFinished = pyqtSignal(
-        float, float, name="sigRTRegionChangeFinished"
-    )
+    sigSeleRTRegionChangeFinished = \
+        pyqtSignal(float, float, name="sigRTRegionChangeFinished")
 
     def __init__(self, parent=None, dpi=100):
         PlotWidget.__init__(self)
@@ -59,11 +73,15 @@ class TICWidget(PlotWidget):
         if self._rts.size == 0:
             self._existTIC = False
 
-    def setTIC(self, chromatogram):
+    def setTIC(self, chromatogram: MSChromatogram) -> None:
         """
         Used to set new TIC and with given Information (rts, ints)
 
-        :param chromatogram: data from the MSExperiment
+        Parameters
+        ----------
+        chromatogram : MSChromatogram
+            Contains all TIC information from the data
+
         """
         if self._peak_labels != {}:
             self._clear_labels()
@@ -82,7 +100,12 @@ class TICWidget(PlotWidget):
     def _rts_in_min(self):
         self._rts = np.array([x / 60 for x in self._rts])
 
-    def _relative_ints(self):
+    def _relative_ints(self) -> None:
+        """
+        The intensity displayed as relative intensity by dividing each
+        intensity through the maximum intensity and multiplying the result with
+        100
+        """
         maxInt = np.amax(self._ints)
         self._ints = np.array([((x / maxInt) * 100) for x in self._ints])
 
@@ -106,11 +129,21 @@ class TICWidget(PlotWidget):
             self.setYRange(0, self.currMaxY, update=False)
             self._redrawLabels()
 
-    def _getMaxIntensityInRange(self, xrange):
+    def _getMaxIntensityInRange(self, xrange: List[float]) -> float:
         """
-        :param xrange: A list of [min, max] bounding RT values.
-        :return: An float value representing the maximal
-            intensity current x range.
+        Finds the maximum intensity point in current range.
+
+        Parameters
+        ----------
+        xrange : List [float, float]
+            The minimum and maximum rt points currently presented in x-range
+            of the plot
+
+        Returns
+        -------
+        float
+            The maximum intensity in the current x-range.
+
         """
         left = np.searchsorted(self._rts, xrange[0], side="left")
         right = np.searchsorted(self._rts, xrange[1], side="right")
@@ -118,18 +151,22 @@ class TICWidget(PlotWidget):
 
         return np.amax(self._ints[left:right], initial=1)
 
-    def _plot_tic(self):
+    def _plot_tic(self) -> None:
         plotgraph = pg.PlotDataItem(self._rts, self._ints)
         self.addItem(plotgraph)
 
-    def _find_Peak(self):
+    def _find_Peak(self) -> list:
         """
         Calculates all indices from the intensity values to locate peaks.
         This function operates on the principle that it compares peak values
         against each other until it founds a maximal turning point.
 
-        :return: A numpy array containing all peak indices,
-            sorted descending (max first -> min last).
+        Returns
+        -------
+        list
+            A list containing all peak indices, sorted descending (max first
+            -> min last).
+
         """
         data = self._ints
         maxIndices = np.zeros_like(data)
@@ -156,7 +193,29 @@ class TICWidget(PlotWidget):
 
         return maxIndices
 
-    def _add_label(self, label_id, label_text, pos_x, pos_y):
+    def _add_label(self,
+                   label_id: int,
+                   label_text: float,
+                   pos_x: float,
+                   pos_y: float) -> None:
+        """
+        Adding a new label to a peak.
+
+        Parameters
+        ----------
+        label_id : int
+            The id of the current label.
+
+        label_text : float
+            The label annotation text for the peak.
+
+        pos_x : float
+            The x-position for the label inside the TIC widget.
+
+        pos_y : float
+            The y-position for the label inside the TIC widget.
+
+        """
         label = pg.TextItem(anchor=(0.5, 1))
         label.setText(text="{0:.2f}".format(label_text), color=(0, 0, 0))
         label.setPos(pos_x, pos_y)
@@ -166,24 +225,45 @@ class TICWidget(PlotWidget):
         if self._label_clashes(label_id):
             self._remove_label(label_id)
 
-    def _remove_label(self, label_id):
+    def _remove_label(self, label_id: int) -> None:
+        """
+        Deletes a label from inside the TIC widget.
+
+        Parameters
+        ----------
+        label_id : int
+            The id of the current label.
+
+        """
         self.removeItem(self._peak_labels[label_id]["label"])
         del self._peak_labels[label_id]
 
-    def _clear_labels(self):
+    def _clear_labels(self) -> None:
+        """
+        Delete all labels inside the TIC widget.
+        """
         for label_id in self._peak_labels.keys():
             self.removeItem(self._peak_labels[label_id]["label"])
         self._peak_labels = {}
 
-    def _label_clashes(self, label_id):
+    def _label_clashes(self, label_id: int) -> bool:
         """
         Calculates possible clash of new added label to other existing labels.
         The clash is measured by the
         collision of the label boundingRects,
         which are representing displayed scene positions.
 
-        :param label_id: Represents index of peak position in peak_indices.
-        :return: A boolean indicating if there is a clash or not.
+        Parameters
+        ----------
+        label_id : int
+            The id of the current label.
+
+
+        Returns
+        -------
+        bool
+            A boolean indicating if there is a clash or not.
+
         """
         new_label = label_id
         clash = False
@@ -227,10 +307,10 @@ class TICWidget(PlotWidget):
                     clash = False
         return clash
 
-    def _draw_peak_label(self):
+    def _draw_peak_label(self) -> None:
         """
-        Function draws peak labels,
-        starting with the maximal peak to the minimal peak.
+        Function draws peak labels, starting with the maximal peak to the
+        minimal peak.
         In each addition possible label clashes will be calculated,
         if so then delete label.
         """
@@ -243,11 +323,25 @@ class TICWidget(PlotWidget):
                         self._ints[index]
                     )
 
-    def _redrawLabels(self):
+    def _redrawLabels(self) -> None:
         self._clear_labels()
         self._draw_peak_label()
 
-    def _clicked(self, event):
+    def _clicked(self, event: QMouseEvent) -> None:
+        """
+        Each mouse click emits a signal to which contains the current RT
+        value to the closest data point.
+
+        Additionally, for a existing region a signal is also emitted which
+        contains the region bounds (RT values to the closest data points).
+
+        Parameters
+        ----------
+        event : QMouseEvent
+            The QMouseEvent occurs when a mouse button is pressed inside the TIC
+            widget.
+
+        """
         if self._existTIC:
             pos = event.scenePos()
             if self.sceneBoundingRect().contains(pos):
@@ -264,7 +358,18 @@ class TICWidget(PlotWidget):
                 self._region.sigRegionChangeFinished.connect(
                     self._rtRegionBounds)
 
-    def mouseDoubleClickEvent(self, event):
+    def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
+        """
+        Differentiates mouse double clicks into creating a new region or
+        deleting the old region.
+
+        Parameters
+        ----------
+        event : QMouseEvent
+            The QMouseEvent occurs when the user double clicks the mouse button
+            on the TIC widget.
+
+        """
         super(TICWidget, self).mouseDoubleClickEvent(event)
         try:
             mouse_point = self.getViewBox().mapSceneToView(event.pos())
@@ -283,11 +388,20 @@ class TICWidget(PlotWidget):
         except ValueError:
             print("No TIC values to click on")
 
-    def _calculate_closest_datapoint(self, point_x):
+    def _calculate_closest_datapoint(self, point_x: float) -> int:
         """
-        :param point_x: mouse clicked position
-        :return: closest data point near a peak
+        Finds the closest peak from the clicked point.
 
+        Parameters
+        ----------
+        point_x : float
+            The clicked mouse x-position.
+
+
+        Returns
+        -------
+        int
+            The index of the closest data point.
         """
         larger_idx = np.searchsorted(self._rts, point_x, side="left")
         smaller_idx = 0
@@ -304,7 +418,10 @@ class TICWidget(PlotWidget):
 
         return closest_datapoint_idx
 
-    def _rtRegionBounds(self):
+    def _rtRegionBounds(self) -> None:
+        """
+        Create a region by double clicking on a point in the TIC widget.
+        """
         region_bounds = self._region.getRegion()
         start_rg = region_bounds[0]
 
@@ -317,13 +434,19 @@ class TICWidget(PlotWidget):
         self.sigSeleRTRegionChangeFinished.emit(
             start_rg, stop_rg)  # notify observers
 
-    def _delete_region(self):
+    def _delete_region(self) -> None:
+        """
+        To delete a created region just double click on the region area.
+        """
         if self._region.mouseHovering:
             self.removeItem(self._region)
             self._region = None
 
-    def _rgn_shortcut(self):
-        # click region, with following shortcut -> create region
+    def _rgn_shortcut(self) -> None:
+        """
+        Short cut to create a region by using the keys Command + r on a point
+        in the TIC widget.
+        """
         rgn_start = self.getViewBox().mapSceneToView(self.lastMousePos)
 
         if self._region is None:
