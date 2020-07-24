@@ -115,7 +115,7 @@ class ErrorWidget(PlotWidget):
         if self.currMaxY:
             self.setYRange(self.currMaxY * (-1), self.currMaxY, update=False)
 
-    def _getMaxMassErrorInRange(self, xrange: List[float]) -> Int64:
+    def _getMaxMassErrorInRange(self, xrange: List[float, float]) -> Int64:
         """
         Finds the maximum mass error point in either experimental or
         theoretical data
@@ -131,6 +131,7 @@ class ErrorWidget(PlotWidget):
         -------
         float
             The maximum mass error in the current x-range of both data
+            
         """
         left = np.searchsorted(self._mzs, xrange[0], side="left")
         right = np.searchsorted(self._mzs, xrange[1], side="right")
