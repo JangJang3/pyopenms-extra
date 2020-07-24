@@ -126,6 +126,7 @@ class ErrorWidget(PlotWidget):
             The minimum and maximum mass-to-charge ratio (m/z) points currently
             presented in x-range of the plot
 
+
         Returns
         -------
         float
